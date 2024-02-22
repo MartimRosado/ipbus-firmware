@@ -39,10 +39,8 @@ use tri_mode_ethernet_mac.all;
 entity eth_rgmii is
 	port(
 		gtx_clk                    : in std_logic;
-		gtx_clk90                  : in std_logic;
 		
 		refclk                     : in std_logic;
-		refclkready                : in std_logic;
 		rst                        : in std_logic;
 		
 		
@@ -108,57 +106,12 @@ architecture rtl of eth_rgmii is
 	  -- );
 	-- END COMPONENT;
 	
-	
-	
-	component eth
-   port(
-      gtx_clk                    : in  std_logic;
-      gtx_clk90                  : in  std_logic;
-      glbl_rstn                  : in  std_logic;
-      rx_axi_rstn                : in  std_logic;
-      tx_axi_rstn                : in  std_logic;
-      rx_statistics_vector       : out std_logic_vector(27 downto 0);
-      rx_statistics_valid        : out std_logic;
-      rx_mac_aclk                : out std_logic;
-      rx_reset                   : out std_logic;
-      rx_axis_mac_tdata          : out std_logic_vector(7 downto 0);
-      rx_axis_mac_tvalid         : out std_logic;
-      rx_axis_mac_tlast          : out std_logic;
-      rx_axis_mac_tuser          : out std_logic;
-      tx_ifg_delay               : in  std_logic_vector(7 downto 0);
-      tx_statistics_vector       : out std_logic_vector(31 downto 0);
-      tx_statistics_valid        : out std_logic;
-      tx_mac_aclk                : out std_logic;
-      tx_reset                   : out std_logic;
-      tx_axis_mac_tdata          : in  std_logic_vector(7 downto 0);
-      tx_axis_mac_tvalid         : in  std_logic;
-      tx_axis_mac_tlast          : in  std_logic;
-      tx_axis_mac_tuser          : in  std_logic_vector(0 downto 0);
-      tx_axis_mac_tready         : out std_logic;
-      pause_req                  : in  std_logic;
-      pause_val                  : in  std_logic_vector(15 downto 0);
-      speedis100                 : out std_logic;
-      speedis10100               : out std_logic;
-      rgmii_txd                  : out std_logic_vector(3 downto 0);
-      rgmii_tx_ctl               : out std_logic;
-      rgmii_txc                  : out std_logic;
-      rgmii_rxd                  : in  std_logic_vector(3 downto 0);
-      rgmii_rx_ctl               : in  std_logic;
-      rgmii_rxc                  : in  std_logic;
-      inband_link_status         : out std_logic;
-      inband_clock_speed         : out std_logic_vector(1 downto 0);
-      inband_duplex_status       : out std_logic;
-      rx_configuration_vector    : in  std_logic_vector(79 downto 0);
-      tx_configuration_vector    : in  std_logic_vector(79 downto 0)
-   );
-   end component;
-	
 
-	COMPONENT mac_fifo_axi4
+	COMPONENT mac_fifo_axi4_2
 	  PORT (
-		 m_aclk : IN STD_LOGIC;
-		 s_aclk : IN STD_LOGIC;
-		 s_aresetn : IN STD_LOGIC;
+		 m_axis_aclk : IN STD_LOGIC;
+		 s_axis_aclk : IN STD_LOGIC;
+		 s_axis_aresetn : IN STD_LOGIC;
 		 s_axis_tvalid : IN STD_LOGIC;
 		 s_axis_tready : OUT STD_LOGIC;
 		 s_axis_tdata : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
@@ -328,7 +281,7 @@ begin
 
    eth_idelayctrl : IDELAYCTRL
     generic map (
-      SIM_DEVICE => "7SERIES"
+      SIM_DEVICE => "ULTRASCALE"
     )
     port map (
       --RDY                    => refclkready,
@@ -338,9 +291,9 @@ begin
 
 	rstn <= not rst;
 
-	eth0: eth port map(
+	eth0: entity work.ethernet port map(
 		gtx_clk => gtx_clk,
-		gtx_clk90 => gtx_clk90,
+		-- refclk => refclk,
 		glbl_rstn => rstn,
 		rx_axi_rstn => '1',
 		tx_axi_rstn => '1',
@@ -401,10 +354,10 @@ begin
 		end if;
 	end process;
 	
-	fifo: mac_fifo_axi4 port map(
-		m_aclk => gtx_clk,
-		s_aclk => rx_clk,
-		s_aresetn => rx_rst,
+	fifo: mac_fifo_axi4_2 port map(
+		m_axis_aclk => gtx_clk,
+		s_axis_aclk => rx_clk,
+		s_axis_aresetn => rx_rst,
 		s_axis_tvalid => rx_valid_e,
 		s_axis_tready => open,
 		s_axis_tdata => rx_data_e,
