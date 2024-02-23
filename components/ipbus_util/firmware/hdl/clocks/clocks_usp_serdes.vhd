@@ -51,6 +51,8 @@ entity clocks_usp_serdes is
 		clko_ipb: out std_logic; -- ipbus domain clock (31MHz)
 		clko_aux: out std_logic; -- pseudo-40MHz clock
 		clko_200: out std_logic; -- 200MHz clock for idelayctrl
+		clko_125: out std_logic; -- internally generated 125 MHz
+		clko_333: out std_logic; -- 333.333MHz clock for idelayctrl -US
 		eth_locked: in std_logic; -- ethernet locked signal
 		locked: out std_logic; -- global locked signal
 		nuke: in std_logic; -- hard reset input
@@ -69,7 +71,7 @@ end clocks_usp_serdes;
 
 architecture rtl of clocks_usp_serdes is
 	
-	signal dcm_locked, sysclk, clk_ipb_i, clk_ipb_b, clkfb, clk200: std_logic;
+	signal dcm_locked, sysclk, clk_ipb_i, clk_ipb_b, clkfb, clk200, clk125, clk333: std_logic;
 	signal clk_aux_i, clk_aux_b: std_logic;
 	signal d17, d17_d: std_logic;
 	signal nuke_i, nuke_d, nuke_d2, eth_done: std_logic := '0';
@@ -99,13 +101,25 @@ begin
 		o => clko_200
 	);
 	
+	bufg125: BUFG port map(
+		i => clk125,
+		o => clko_125
+	);
+	
+	bufg333: BUFG port map(
+		i => clk333,
+		o => clko_333
+	);
+	
 	mmcm: MMCME4_BASE
 		generic map(
 			clkin1_period => 1000.0 / CLK_FR_FREQ,
 			clkfbout_mult_f => CLK_VCO_FREQ / CLK_FR_FREQ,
 			clkout1_divide => integer(CLK_VCO_FREQ / 31.25),
 			clkout2_divide => integer(CLK_VCO_FREQ / CLK_AUX_FREQ),
-			clkout3_divide => integer(CLK_VCO_FREQ / 200.00)
+			clkout3_divide => integer(CLK_VCO_FREQ / 200.00),
+			clkout4_divide => integer(CLK_VCO_FREQ / 125.00),
+			clkout5_divide => integer(CLK_VCO_FREQ / 333.3333)
 		)
 		port map(
 			clkin1 => sysclk,
@@ -114,6 +128,8 @@ begin
 			clkout1 => clk_ipb_i,
 			clkout2 => clk_aux_i,
 			clkout3 => clk200,
+			clkout4 => clk125,
+			clkout5 => clk333,
 			locked => dcm_locked,
 			rst => '0',
 			pwrdwn => '0'
